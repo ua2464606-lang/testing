@@ -30,7 +30,6 @@ export function SceneRestaurant() {
         data={{ ...hero, accent: "#f6b73c" }}
         window={[0.62, 0.8]}
         position={[anchor.x, anchor.y, anchor.z]}
-        spin={0.1}
       />
       <pointLight
         position={[anchor.x + 2, anchor.y + 2, anchor.z + 2]}

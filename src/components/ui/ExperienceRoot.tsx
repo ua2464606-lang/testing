@@ -5,6 +5,7 @@ import { SCROLL_HEIGHT_VH } from "@/lib/constants/scenes";
 import { Loader } from "@/components/dom/Loader";
 import { Hud } from "@/components/dom/Hud";
 import { SceneOverlay } from "@/components/dom/SceneOverlay";
+import { ProductLabel } from "@/components/dom/ProductLabel";
 import { Prompts } from "@/components/dom/Prompts";
 import { AmbientDust } from "@/components/dom/AmbientDust";
 
@@ -31,6 +32,7 @@ export function ExperienceRoot() {
         <div className="stage__overlays">
           <Hud />
           <SceneOverlay />
+          <ProductLabel />
           <Prompts />
           <AmbientDust />
           <div className="stage__grain" aria-hidden />

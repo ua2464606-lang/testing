@@ -66,7 +66,6 @@ export function SceneTransform() {
           data={item.data}
           window={item.window}
           position={item.position}
-          spin={0.3}
         />
       ))}
     </group>

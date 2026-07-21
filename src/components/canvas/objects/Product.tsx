@@ -1,40 +1,44 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Product as ProductData } from "@/lib/constants/products";
-import { useProductTexture } from "@/hooks/useProductTexture";
+import { useImageTexture } from "@/hooks/useImageTexture";
+import { createGlowTexture } from "@/lib/three/textures";
 import { experienceState } from "@/lib/store/useExperienceStore";
 
 /**
- * A single hero product floating in space, filling the frame.
+ * A hero product, rendered ONLY as real photography.
  *
- * If real photography exists it renders as a transparent, camera-facing plate
- * lit by an accent rim. Otherwise it renders a lit procedural stand-in (a faceted
- * gold form) so the composition is never empty.
+ * When the product PNG exists it is a transparent, camera-facing photographic
+ * plate, scaled to its natural aspect and filling the frame. When it does not
+ * exist we render a soft accent-tinted light presence (an additive glow
+ * billboard + point light) — never a geometry primitive standing in for food.
  *
- * `window` is a static [start, end] slice of global progress. The product
- * computes its own reveal (fade/scale in then out) from that window inside
- * useFrame, so React never re-renders during scroll — all motion is imperative.
+ * `window` is a static [start, end] slice of global progress; the plate computes
+ * its own reveal in useFrame so React never re-renders during scroll.
  */
 export function Product({
   data,
   position = [0, 0, 0],
   window,
-  spin = 0.15,
+  size = 3.2,
 }: {
   data: ProductData;
   position?: [number, number, number];
   window: [number, number];
-  spin?: number;
+  size?: number;
 }) {
   const group = useRef<THREE.Group>(null);
-  const planeRef = useRef<THREE.Mesh>(null);
-  const matRef = useRef<THREE.MeshBasicMaterial>(null);
-  const standRef = useRef<THREE.Mesh>(null);
-  const texture = useProductTexture(data.image);
-  const accent = new THREE.Color(data.accent);
+  const plate = useRef<THREE.Mesh>(null);
+  const plateMat = useRef<THREE.MeshBasicMaterial>(null);
+  const glow = useRef<THREE.Mesh>(null);
+  const glowMat = useRef<THREE.MeshBasicMaterial>(null);
+
+  const { texture, aspect } = useImageTexture(data.image);
+  const accent = useMemo(() => new THREE.Color(data.accent), [data.accent]);
+  const glowTex = useMemo(() => createGlowTexture(), []);
 
   useFrame((state, delta) => {
     const d = Math.min(delta, 0.05);
@@ -44,65 +48,64 @@ export function Product({
     const { progress } = experienceState();
     const [a, b] = window;
     const t = (progress - a) / (b - a);
-    // triangular reveal: 0 → 1 at centre → 0, with soft plateau
     let reveal = 0;
     if (t > 0 && t < 1) {
-      reveal = t < 0.5 ? t / 0.4 : (1 - t) / 0.4;
-      reveal = Math.min(1, Math.max(0, reveal));
+      reveal = Math.min(1, Math.max(0, t < 0.5 ? t / 0.4 : (1 - t) / 0.4));
     }
     const eased = reveal * reveal * (3 - 2 * reveal);
 
     g.visible = reveal > 0.001;
-    const targetScale = 0.65 + eased * 0.4;
-    g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, targetScale, 5, d));
+    g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, 0.7 + eased * 0.35, 5, d));
+    g.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.6) * 0.05;
 
-    const clock = state.clock.elapsedTime;
-    g.position.y = position[1] + Math.sin(clock * 0.6) * 0.06;
+    // billboard photographic plate toward camera
+    if (plate.current) plate.current.quaternion.copy(state.camera.quaternion);
+    if (plateMat.current) plateMat.current.opacity = eased;
 
-    if (texture && planeRef.current) {
-      planeRef.current.quaternion.slerp(state.camera.quaternion, 0.12);
-      if (matRef.current) matRef.current.opacity = eased;
-    }
-    if (standRef.current) {
-      standRef.current.rotation.y += d * spin;
-      standRef.current.rotation.x = Math.sin(clock * 0.3) * 0.12;
-      (standRef.current.material as THREE.MeshStandardMaterial).opacity = eased;
+    if (glow.current) {
+      glow.current.quaternion.copy(state.camera.quaternion);
+      const pulse = 0.85 + 0.15 * Math.sin(state.clock.elapsedTime * 1.2);
+      if (glowMat.current) glowMat.current.opacity = eased * 0.6 * pulse;
     }
   });
+
+  const w = texture ? size * Math.min(aspect, 1.6) : size;
+  const h = texture ? size / Math.max(aspect, 0.001) : size;
 
   return (
     <group ref={group} position={position} visible={false}>
       <pointLight
-        position={[1.5, 2, 2]}
-        intensity={6}
+        position={[1.4, 1.8, 2.2]}
+        intensity={texture ? 5 : 9}
         color={accent}
-        distance={12}
+        distance={14}
         decay={2}
       />
       {texture ? (
-        <mesh ref={planeRef}>
-          <planeGeometry args={[3, 3]} />
+        <mesh ref={plate}>
+          <planeGeometry args={[w, h]} />
           <meshBasicMaterial
-            ref={matRef}
+            ref={plateMat}
             map={texture}
             transparent
             opacity={0}
+            depthWrite={false}
             toneMapped={false}
           />
         </mesh>
       ) : (
-        <mesh ref={standRef}>
-          <icosahedronGeometry args={[1.1, 1]} />
-          <meshStandardMaterial
+        // non-geometry placeholder: a light presence, not fake food
+        <mesh ref={glow}>
+          <planeGeometry args={[size * 1.6, size * 1.6]} />
+          <meshBasicMaterial
+            ref={glowMat}
+            map={glowTex}
             color={accent}
-            metalness={0.55}
-            roughness={0.28}
-            emissive={accent}
-            emissiveIntensity={0.12}
             transparent
             opacity={0}
-            envMapIntensity={1.4}
-            flatShading
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
           />
         </mesh>
       )}

@@ -3,29 +3,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-
-function makeSprite(): THREE.Texture {
-  const size = 64;
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  const ctx = c.getContext("2d")!;
-  const g = ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    0,
-    size / 2,
-    size / 2,
-    size / 2
-  );
-  g.addColorStop(0, "rgba(255,255,255,1)");
-  g.addColorStop(0.35, "rgba(255,255,255,0.55)");
-  g.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(c);
-  tex.needsUpdate = true;
-  return tex;
-}
+import { createGlowTexture } from "@/lib/three/textures";
 
 export interface ParticleFieldProps {
   count?: number;
@@ -57,7 +35,7 @@ export function ParticleField({
   position = [0, 0, 0],
 }: ParticleFieldProps) {
   const pointsRef = useRef<THREE.Points>(null);
-  const sprite = useMemo(() => makeSprite(), []);
+  const sprite = useMemo(() => createGlowTexture(), []);
 
   const { positions, seeds } = useMemo(() => {
     const positions = new Float32Array(count * 3);

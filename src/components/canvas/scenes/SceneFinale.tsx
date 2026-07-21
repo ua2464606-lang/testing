@@ -39,7 +39,7 @@ export function SceneFinale() {
 
   return (
     <group ref={group} position={[anchor.x, anchor.y - 0.3, anchor.z]} visible={false}>
-      <Bucket position={[0, 0, 0]} rotationSpeed={0.15} />
+      <Bucket position={[0, 0, 0]} />
       <ParticleField
         count={400}
         radius={4}

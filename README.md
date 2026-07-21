@@ -31,7 +31,7 @@ src/
 │  │  ├─ Experience.tsx      # the single stage; mounts all scenes at once
 │  │  ├─ camera/             # CinematicCamera — damped follow of the dolly path
 │  │  ├─ effects/            # PostProcessing, ParticleField
-│  │  ├─ objects/            # Bucket, Product, Steam, ProductionLine, Lights, Atmosphere
+│  │  ├─ objects/            # Bucket, Product, Steam, ProductionLine, Lights, Atmosphere (food = photographic plates only)
 │  │  └─ scenes/             # Scene01…Finale orchestrators
 │  ├─ dom/                   # editorial overlay: Loader, Hud, SceneOverlay, Prompts, AmbientDust
 │  └─ ui/                    # ExperienceRoot composition
@@ -77,10 +77,20 @@ npm run build    # production build
 npm run typecheck
 ```
 
+## Food is photography, never geometry
+
+Food and products are rendered **only** as real photography / professionally
+rendered PNGs on camera-facing plates. The 3D layer never uses geometry
+primitives to represent food — Three.js is confined to camera, lighting,
+particles, steam/smoke, lens distortion, depth, post and movement. Where an
+asset is missing, a non-geometry **light presence** + the product's editorial
+name is shown, never a stand-in shape.
+
 ## Assets & fonts (read these)
 
-- **Product photography** → `public/products/README.md`. Real, campaign-grade
-  transparent PNGs. Until present, a lit 3D stand-in renders so nothing breaks.
+- **Product photography & hero assets** → `public/products/README.md`. Real,
+  campaign-grade transparent PNGs (nine product plates + bucket / fry / potato).
+  Until present, a light presence + product name renders so nothing breaks.
 - **Fonts** → `src/fonts/README.md`. Neue Montreal / PP Editorial New / Satoshi
   / Geist are licensed and not committed; the CSS names them first and falls
   back gracefully, upgrading automatically once the faces are added.

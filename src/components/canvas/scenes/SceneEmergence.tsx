@@ -14,7 +14,7 @@ import { ParticleField } from "@/components/canvas/effects/ParticleField";
 export function SceneEmergence() {
   return (
     <group position={[0, 0, 0]}>
-      <Bucket position={[0, -0.4, 0]} />
+      <Bucket position={[0, -0.2, 0]} window={[0.0, 0.2]} />
       <FallingFries count={44} />
       <Steam
         position={[0, 0.9, 0.1]}
