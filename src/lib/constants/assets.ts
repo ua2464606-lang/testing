@@ -15,3 +15,12 @@ export const HERO_ASSETS = {
   frySprite: "/products/fry-sprite.png",
   potato: "/products/potato.png",
 } as const;
+
+/**
+ * Real footage assets (mp4). Mapped as VideoTextures inside the WebGL scene so
+ * the cinematic camera, grain, vignette and steam composite over real film.
+ *   /video/fries-falling.mp4 — Scene 01 hero: fries falling into the bucket
+ */
+export const VIDEO_ASSETS = {
+  friesFalling: "/video/fries-falling.mp4",
+} as const;

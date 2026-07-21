@@ -1,28 +1,36 @@
 "use client";
 
-import { Bucket } from "@/components/canvas/objects/Bucket";
-import { FallingFries } from "@/components/canvas/objects/FallingFries";
+import { VideoPlate } from "@/components/canvas/objects/VideoPlate";
 import { Steam } from "@/components/canvas/objects/Steam";
 import { ParticleField } from "@/components/canvas/effects/ParticleField";
+import { VIDEO_ASSETS } from "@/lib/constants/assets";
 
 /**
  * SCENE 01 — Emergence.
- * A bucket rises from black as the key light ramps. Real fries rain in, steam
- * lifts off the rim, dust hangs in the volumetric beam. The camera pushes
- * slowly forward toward the rim (handled by the dolly path).
+ * Real footage of fries falling into the bucket, mapped as a VideoTexture on a
+ * camera-facing plate. The cinematic camera pushes in toward it while dust hangs
+ * in the beam and steam lifts off the top — all compositing over the film via
+ * the shared post-processing stack. As the scene ends the plate dissolves and
+ * the camera continues into the cold vault (no cut).
  */
 export function SceneEmergence() {
   return (
     <group position={[0, 0, 0]}>
-      <Bucket position={[0, -0.2, 0]} window={[0.0, 0.2]} />
-      <FallingFries count={44} />
+      <VideoPlate
+        src={VIDEO_ASSETS.friesFalling}
+        position={[0, 0.1, 0]}
+        height={5.2}
+        window={[0.0, 0.18]}
+      />
+
       <Steam
-        position={[0, 0.9, 0.1]}
+        position={[0, 1.4, 0.2]}
         scale={[1.8, 2.6, 1]}
         color="#e9d8c4"
-        window={[0.0, 0.16]}
-        peak={0.9}
+        window={[0.02, 0.16]}
+        peak={0.8}
       />
+
       {/* cinematic dust in the beam */}
       <ParticleField
         count={500}
