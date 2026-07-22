@@ -1,8 +1,8 @@
 {
-  "name": "fry-guys-cinematic",
+  "name": "formulaeai-cinematic",
   "version": "1.0.0",
   "private": true,
-  "description": "Fry Guys — a cinematic, scroll-driven WebGL storytelling experience.",
+  "description": "FormulaeAI — a cinematic, scroll-driven editorial site for an AI marketing employee.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,30 +11,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-three/drei": "^10.0.0",
-    "@react-three/fiber": "^9.0.0",
-    "@react-three/postprocessing": "^3.0.0",
-    "@tsparticles/engine": "^3.5.0",
-    "@tsparticles/react": "^3.0.0",
-    "@tsparticles/slim": "^3.5.0",
-    "eslint-config-next": "^15.5.20",
     "framer-motion": "^11.11.0",
     "gsap": "^3.12.5",
     "lenis": "^1.1.14",
-    "lucide-react": "^0.454.0",
     "next": "^15.5.20",
-    "postprocessing": "^6.36.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "three": "^0.169.0",
-    "zustand": "^4.5.5"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.7.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.169.0",
+    "eslint-config-next": "^15.5.20",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.0"
   }
