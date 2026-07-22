@@ -1,27 +1,49 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import Lenis from "lenis";
-import { useExperienceStore } from "@/lib/store/useExperienceStore";
 import { registerGsap, gsap, ScrollTrigger } from "@/lib/gsap/register";
 
 /**
- * Owns the single Lenis instance and the RAF loop.
+ * Owns the single Lenis instance and the RAF loop for the whole film.
  *
- * Responsibilities:
- *  - momentum smooth-scroll (Lenis)
- *  - publish normalized progress into the zustand store every frame
- *  - keep GSAP ScrollTrigger in sync with Lenis
- *  - track pointer for parallax and honour reduced-motion
+ *  - momentum smooth-scroll (Lenis) so the page reads as one continuous reel
+ *  - keeps GSAP ScrollTrigger frame-locked to Lenis (pinning / scrubbing)
+ *  - honours prefers-reduced-motion by dropping smoothing to near-instant
+ *  - publishes a normalized pointer (-1..1) through context for hero parallax
  *
- * This is the ONLY place that reads window scroll — every visual system
- * downstream reads `progress` from the store, so the camera and the DOM stay
- * frame-locked to the same value.
+ * Framer Motion's `useScroll` reads native scroll position, which Lenis keeps
+ * in sync — so downstream acts can use either Framer or GSAP against the same
+ * timeline.
  */
+
+type PointerState = { x: number; y: number };
+
+const PointerContext = createContext<PointerState>({ x: 0, y: 0 });
+const ReducedMotionContext = createContext(false);
+
+/** Live, smoothed pointer position in the range -1..1 (centre = 0,0). */
+export function usePointer() {
+  return useContext(PointerContext);
+}
+
+export function useReducedMotion() {
+  return useContext(ReducedMotionContext);
+}
+
 export function SmoothScrollProvider({ children }: { children: ReactNode }) {
-  const setProgress = useExperienceStore((s) => s.setProgress);
-  const setPointer = useExperienceStore((s) => s.setPointer);
-  const setReducedMotion = useExperienceStore((s) => s.setReducedMotion);
+  const [pointer, setPointer] = useState<PointerState>({ x: 0, y: 0 });
+  const [reduced, setReduced] = useState(false);
+  // Target pointer we lerp toward, so parallax feels weighted, not twitchy.
+  const target = useRef<PointerState>({ x: 0, y: 0 });
+  const current = useRef<PointerState>({ x: 0, y: 0 });
 
   useEffect(() => {
     registerGsap();
@@ -29,59 +51,60 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    setReducedMotion(prefersReduced);
+    setReduced(prefersReduced);
 
     const lenis = new Lenis({
-      duration: prefersReduced ? 0.1 : 1.25,
+      duration: prefersReduced ? 0.1 : 1.35,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: !prefersReduced,
-      touchMultiplier: 1.5,
+      touchMultiplier: 1.4,
       wheelMultiplier: 1,
     });
 
-    const publish = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const p = max > 0 ? window.scrollY / max : 0;
-      setProgress(p);
-    };
-
-    lenis.on("scroll", () => {
-      ScrollTrigger.update();
-      publish();
-    });
+    lenis.on("scroll", ScrollTrigger.update);
 
     let raf = 0;
     const loop = (time: number) => {
       lenis.raf(time);
+
+      // Weighted pointer smoothing — a slow lerp reads as depth, not lag.
+      current.current.x += (target.current.x - current.current.x) * 0.06;
+      current.current.y += (target.current.y - current.current.y) * 0.06;
+      setPointer({ x: current.current.x, y: current.current.y });
+
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-
-    // Bridge GSAP ticker → Lenis for any ScrollTrigger-driven tweens.
     gsap.ticker.lagSmoothing(0);
 
-    publish();
-
     const onPointer = (e: PointerEvent) => {
-      const x = (e.clientX / window.innerWidth) * 2 - 1;
-      const y = (e.clientY / window.innerHeight) * 2 - 1;
-      setPointer(x, y);
+      target.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      target.current.y = (e.clientY / window.innerHeight) * 2 - 1;
     };
-    window.addEventListener("pointermove", onPointer, { passive: true });
+    if (!prefersReduced) {
+      window.addEventListener("pointermove", onPointer, { passive: true });
+    }
 
-    const onResize = () => {
-      ScrollTrigger.refresh();
-      publish();
-    };
+    const onResize = () => ScrollTrigger.refresh();
     window.addEventListener("resize", onResize);
+
+    // Let heavy fonts / images settle, then re-measure pinned triggers.
+    const settle = window.setTimeout(() => ScrollTrigger.refresh(), 500);
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(settle);
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("resize", onResize);
       lenis.destroy();
     };
-  }, [setProgress, setPointer, setReducedMotion]);
+  }, []);
 
-  return <>{children}</>;
+  return (
+    <ReducedMotionContext.Provider value={reduced}>
+      <PointerContext.Provider value={pointer}>
+        {children}
+      </PointerContext.Provider>
+    </ReducedMotionContext.Provider>
+  );
 }
